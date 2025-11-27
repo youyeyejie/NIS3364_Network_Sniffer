@@ -108,6 +108,9 @@ sniffer/dist/MySniffer.exe
 python test/test.py
 ```
 
+![](image/image.png)
+![](image/image-1.png)
+
 ## 注意事项
 
 1. **权限要求**：运行网络嗅探器需要管理员/root权限

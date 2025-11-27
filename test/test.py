@@ -37,7 +37,10 @@ def test_large_packet_fragmentation(dest_ip='192.168.1.1', sport=11451, dport=14
     print("正在发送分片数据包...")
     
     # 使用TCP发送大数据包，设置DF=0允许分片
-    large_payload = ("this is a large payload，马悦钊" * 100).encode()
+    readme_path = "../README.md"
+    with open(readme_path, "rb") as f:
+        readme_content = f.read()
+    large_payload = readme_content.decode("utf-8")
     packet = IP(dst=dest_ip) / TCP(dport=dport, sport=sport, flags="S")  / large_payload
     fragments = fragment(packet, fragsize=1000)
     send(fragments)
