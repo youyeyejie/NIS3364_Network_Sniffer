@@ -234,7 +234,7 @@ class NetworkSniffer:
         self.load_button.config(state=tk.NORMAL)
         self.filter_button.config(state=tk.NORMAL)
         # 启用混杂模式切换按钮
-        self.promisc_button.config(state=tk.NORMAL)
+        self.promisc_button.config(state=tk.NORMAL if self.is_admin else tk.DISABLED)
     
     def _sniff_packets(self, interface: str, protocol_filter: str):
         """数据包嗅探函数，支持捕获非本机数据包（需要管理员权限和混杂模式）"""

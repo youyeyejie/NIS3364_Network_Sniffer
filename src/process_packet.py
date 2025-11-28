@@ -69,6 +69,10 @@ def process_ether(packet: scapy.Packet, packet_info: Dict[str, Any]):
     packet_info["detail"] += f"类型: 0x{packet[Ether].type:04x} ({ether_protocol_name})\n"
     packet_info["detail"] += f"载荷长度: {len(packet[Ether].payload)} 字节\n\n"
 
+    # 尝试提取应用层数据
+    if packet.haslayer(scapy.Raw):
+        packet_info["data"] = packet[scapy.Raw].load 
+
 def process_arp(packet: scapy.Packet, packet_info: Dict[str, Any]):
     """处理ARP层"""
     if ARP not in packet:
@@ -139,6 +143,10 @@ def process_arp(packet: scapy.Packet, packet_info: Dict[str, Any]):
     packet_info["detail"] += f"目标IP地址: {arp_packet.pdst}\n"
     packet_info["detail"] += f"载荷长度: {len(arp_packet.payload)} 字节\n\n"
 
+    # 尝试提取应用层数据
+    if packet.haslayer(scapy.Raw):
+        packet_info["data"] = packet[scapy.Raw].load
+
 def process_ip(packet: scapy.Packet, packet_info: Dict[str, Any]):
     """处理IP层"""
     if IP not in packet:
@@ -197,20 +205,10 @@ def process_ip(packet: scapy.Packet, packet_info: Dict[str, Any]):
     packet_info["detail"] += f"源IP: {ip_packet.src}\n"
     packet_info["detail"] += f"目的IP: {ip_packet.dst}\n"
     packet_info["detail"] += f"IP选项: {ip_packet.options}\n\n"
-    
-    # 对于分片数据包，尝试提取数据部分
-    if is_fragment:
-        # 计算IP头部长度
-        ip_header_length = ip_packet.ihl * 4
-        # 计算数据长度
-        data_length = ip_packet.len - ip_header_length
-        if data_length > 0:
-            # 提取IP载荷数据
-            # 这里我们需要从原始数据包中提取IP载荷部分
-            # 使用scapy的getlayer方法获取IP层的原始数据
-            ip_raw_data = bytes(ip_packet)
-            # 从头部之后的位置提取数据
-            packet_info["data"] = ip_raw_data[ip_header_length:]
+
+    # 尝试提取应用层数据
+    if packet.haslayer(scapy.Raw):
+        packet_info["data"] = packet[scapy.Raw].load
 
 def process_ipv6(packet: scapy.Packet, packet_info: Dict[str, Any]):
     """处理IPv6层"""
@@ -253,6 +251,10 @@ def process_ipv6(packet: scapy.Packet, packet_info: Dict[str, Any]):
     packet_info["detail"] += f"跳数限制: {ipv6_packet.hlim}\n"
     packet_info["detail"] += f"源IPv6地址: {ipv6_packet.src}\n"
     packet_info["detail"] += f"目的IPv6地址: {ipv6_packet.dst}\n\n"
+
+    # 尝试提取应用层数据
+    if packet.haslayer(scapy.Raw):
+        packet_info["data"] = packet[scapy.Raw].load
 
 def process_icmp(packet: scapy.Packet, packet_info: Dict[str, Any]):
     """处理ICMP层"""
@@ -338,7 +340,6 @@ def process_icmp(packet: scapy.Packet, packet_info: Dict[str, Any]):
     # 尝试提取应用层数据
     if packet.haslayer(scapy.Raw):
         packet_info["data"] = packet[scapy.Raw].load
-        # packet_info["data"] = icmpv6_packet.data
 
 def process_icmpv6(packet: scapy.Packet, packet_info: Dict[str, Any]):
     """处理ICMPv6层"""
@@ -465,7 +466,6 @@ def process_udp(packet: scapy.Packet, packet_info: Dict[str, Any]):
     """处理UDP层"""
     if UDP not in packet:
         return
-    
     udp_packet = packet[UDP]
     packet_info["protocol"] = "UDP"
     sport = udp_packet.sport
@@ -500,7 +500,8 @@ def process_udp(packet: scapy.Packet, packet_info: Dict[str, Any]):
     packet_info["detail"] += f"数据长度: {data_len} 字节\n\n"
     
     # 尝试提取应用层数据
-    packet_info["data"] = bytes(packet[UDP])[header_len:]
+    if packet.haslayer(scapy.Raw):
+        packet_info["data"] = packet[scapy.Raw].load
 
 
 def reassemble_packet(Sniffer):
@@ -604,7 +605,7 @@ def reassemble_packet(Sniffer):
             if line.startswith("=== TCP 层 ===") or line.startswith("=== UDP 层 ==="):
                 start_idx = idx
                 break
-        reassembled_detail += "\n".join(lines[start_idx:])
+        reassembled_detail += "\n".join(lines[start_idx:-2])
 
         return reassembled_detail, reassembled_data 
     except Exception as e:

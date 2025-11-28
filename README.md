@@ -14,7 +14,8 @@ sniffer/
 │   └── process_packet.py   # 数据包处理模块
 ├── test/                   # 测试脚本目录
 │   ├── test.pcap           # 测试记录
-│   └── test.py             # 功能测试脚本
+│   ├── test.py             # 功能测试脚本
+│   └── hex2png.py          # 十六进制数据转换为PNG图片脚本
 ├── ico/                    # 图标资源目录
 │   └── Sniffer.ico         # 应用程序图标
 ├── requirements.txt        # 项目依赖文件
@@ -38,9 +39,9 @@ sniffer/
 
 - Python 3.6 或更高版本
 - 依赖库：
-  - scapy >= 2.4.5
-  - psutil >= 5.9.0
-  - tkinter (Python标准库)
+    - scapy >= 2.4.5
+    - psutil >= 5.9.0
+    - tkinter (Python标准库)
 
 ### 2. 安装依赖
 
@@ -82,7 +83,7 @@ pyinstaller --onefile --windowed --name "MySniffer" --add-data "src\*.py;src" sr
 - `--onefile`：生成单个可执行文件
 - `--windowed`：创建窗口应用，不显示命令行界面
 - `--name "MySniffer"`：指定生成的可执行文件名称
-- `--add-data "src\*.py;src"`：将src目录下的所有.py文件添加到可执行文件中
+- `--add-data "src\*.py;src"`：将 src 目录下的所有.py文件添加到可执行文件中
 - `src\main.py`：指定程序入口文件
 - `--icon="./ico/Sniffer.ico"`：指定应用程序图标
 
@@ -91,7 +92,7 @@ pyinstaller --onefile --windowed --name "MySniffer" --add-data "src\*.py;src" sr
 打包完成后，可执行文件将位于项目目录下的`dist`文件夹中：
 
 ```
-sniffer/dist/MySniffer.exe
+/dist/MySniffer.exe
 ```
 
 ## 测试工具
@@ -100,7 +101,7 @@ sniffer/dist/MySniffer.exe
 
 1. **分片发送长报文**：测试嗅探器的分片重组功能
 2. **发送图像文件**：测试文件内容传输的捕获
-3. **多协议测试**：测试TCP、UDP、ICMP、ARP等协议的解析
+3. **多协议测试**：测试 TCP、UDP、ICMP、ARP 等协议的解析
 
 在启动嗅探器后，运行测试脚本：
 
@@ -111,9 +112,22 @@ python test/test.py
 ![](image/image.png)
 ![](image/image-1.png)
 
+在 `test/` 目录下，还提供了一个十六进制数据转换为 PNG 图片的脚本 `hex2png.py`，用于将测试脚本中发送的图片数据转换为 PNG 图片，方便查看和分析。
+
+使用方法：将网络嗅探器中重组后的十六进制数据复制并保存到文件中，然后使用该脚本将其转换为PNG图片。
+
+```bash
+python test/hex2png.py --input [path/to/input] --output [path/to/output]
+```
+
+参数说明：
+
+- `--input`：指定输入的十六进制数据文件路径
+- `--output`：指定输出的 PNG 图片路径，默认值为 `output.png`
+
 ## 注意事项
 
-1. **权限要求**：运行网络嗅探器需要管理员/root权限
+1. **权限要求**：运行网络嗅探器需要管理员/root 权限
 2. **网络安全**：在使用混杂模式时，请确保符合相关法律法规，仅用于合法的网络分析
 3. **性能影响**：长时间捕获大量数据包可能会影响系统性能
 4. **兼容性**：在不同操作系统上可能需要调整部分配置

@@ -41,7 +41,7 @@ def test_large_packet_fragmentation(dest_ip='192.168.1.1', sport=11451, dport=14
     with open(readme_path, "rb") as f:
         readme_content = f.read()
     large_payload = readme_content.decode("utf-8")
-    packet = IP(dst=dest_ip) / TCP(dport=dport, sport=sport, flags="S")  / large_payload
+    packet = IP(dst=dest_ip, id=11451) / TCP(dport=dport, sport=sport, flags="S")  / large_payload
     fragments = fragment(packet, fragsize=1000)
     send(fragments)
     print("分片数据包发送完成，请检查嗅探器是否正确重组数据包")
@@ -57,23 +57,14 @@ def test_image_transfer(dest_ip='192.168.1.1', sport=11451, dport=14514):
     print("正在发送图片数据...")
     
     # 读取ICO文件
-    image_path = "../ico/Sniffer.ico"
+    image_path = "../ico/Sniffer.png"
     with open(image_path, "rb") as img_file:
         image_data = img_file.read()
-    
-    # 发送图片数据
-    # 手动分片：将图片数据按1000字节切片，逐片封装后发送
-    fragsize = 1000
-    total = len(image_data)
-    offset = 0
-    while offset < total:
-        chunk = image_data[offset:offset + fragsize]
-        pkt = IP(dst=dest_ip, proto=6, id=12345, flags="MF" if offset + fragsize < total else 0, frag=offset // 8) / chunk
-        send(pkt, verbose=False)
-        offset += fragsize
-        print(f"已发送 {offset}/{total} 字节")
-    print("图片数据发送完成，请检查嗅探器是否正确捕获ICO文件数据")
-    print("================================\n")
+    packet = IP(dst=dest_ip, id=14514) / TCP(dport=dport, sport=sport, flags="S") / image_data
+    fragments = fragment(packet, fragsize=1000)
+    send(fragments)
+    print("图片数据发送完成，请检查嗅探器是否正确捕获并重组ICO文件数据")
+    print("==================================\n")
 
 def test_various_protocols(dest_ip='192.168.1.1', sport=11451, dport=14514):
     """
