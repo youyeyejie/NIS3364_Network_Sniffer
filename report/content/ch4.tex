@@ -1,0 +1,253 @@
+\chapter{项目实现}
+
+\section{整体架构设计}
+本项目采用模块化设计，主要分为以下几个模块：\par
+\vspace{1em}
+
+\begin{enumerate}
+    \item \textbf{主程序模块}（main.py）：程序入口，负责初始化界面和检查权限
+    \item \textbf{嗅探器核心模块}（sniffer.py）：实现数据包捕获、界面交互等核心功能
+    \item \textbf{数据包处理模块}（process\_packet.py）：负责解析不同协议的数据包
+\end{enumerate}
+
+\section{核心功能实现}
+
+\subsection{主程序模块（main.py）}
+主程序模块负责初始化应用程序，检查运行权限，并创建主窗口。
+
+\begin{codeblock}[language=python]
+import os
+import tkinter as tk
+from sniffer import NetworkSniffer
+
+def main():
+    """主函数"""
+    # 检查是否以管理员/root权限运行
+    if os.name == "nt":  # Windows
+        try:
+            import ctypes
+            is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
+        except:
+            pass
+    else:  # Unix/Linux
+        is_admin = (os.geteuid() == 0)
+
+    root = tk.Tk()
+    app = NetworkSniffer(root, is_admin)
+    
+    # 设置程序退出处理
+    def on_closing():
+        if app.is_sniffing:
+            app._pause_sniffing()
+        root.destroy()
+    
+    root.protocol("WM_DELETE_WINDOW", on_closing)
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()
+\end{codeblock}
+
+\subsection{嗅探器核心模块（sniffer.py）}
+该模块实现了网络嗅探器的核心功能，包括基于Tkinter的界面创建、基于psutil的网络接口读取、基于scapy的数据包捕获、PCAP文件处理以及状态控制等。
+
+\subsubsection{初始化与界面创建}
+\begin{codeblock}[language=python]
+class NetworkSniffer:
+    """网络嗅探器主类"""
+    
+    def __init__(self, root: tk.Tk, is_admin):
+        """初始化嗅探器"""
+        self.root = root
+        if is_admin:
+            self.root.title("网络嗅探器（管理员模式）")
+        else:
+            self.root.title("网络嗅探器（建议打开管理员模式以体验完整功能）")
+        self.root.geometry("1200x800")
+        self.root.minsize(1200, 800)
+        self.fonts = ("SimHei", 10)
+        
+        # 程序状态变量
+        self.is_sniffing = False
+        self.sniff_thread = None
+        self.packet_list: List[Dict[str, Any]] = []
+        self.original_packet_list: List[Dict[str, Any]] = []
+        self.selected_packet_index = -1
+        self.protocol_filters = {}
+        self.current_interface = None
+        self.packets_to_save = []
+        self.is_loading_from_pcap = False
+        self.is_filtered = False
+        self.is_promiscuous = False
+        self.is_admin = is_admin
+        
+        # 初始化界面
+        self._create_widgets()
+        self._layout_widgets()
+        self._setup_events()
+        
+        # 加载网络接口
+        self.load_network_interfaces()
+\end{codeblock}
+
+\subsubsection{数据包捕获功能}
+\begin{codeblock}[language=python]
+def _start_sniffing(self):
+    """开始嗅探数据包"""
+    # 省略相关处理过程
+    self.sniff_thread = threading.Thread(target=self._sniff_packets, args=(interface, protocol_filter), daemon=True)
+    self.sniff_thread.start()
+def _sniff_packets(self, interface: str, protocol_filter: str):
+    """数据包嗅探函数"""
+    def packet_callback(packet):
+        if not self.is_sniffing:
+            return False
+            
+        self._process_packet(packet)
+    
+    # 构建过滤器表达式
+    filter_expr = ""
+    if protocol_filter != "全部":
+        if protocol_filter == "IPv4":
+            filter_expr = "ip"
+        elif protocol_filter == "IPv6":
+            filter_expr = "ip6"
+        else:
+            filter_expr = protocol_filter.lower()
+    
+    try:
+        scapy.sniff(iface=interface, prn=packet_callback, store=False, stop_filter=lambda _: not self.is_sniffing, filter=filter_expr, promisc=self.is_promiscuous)  # 根据标志启用/禁用混杂模式
+    except Exception as e:
+        self.root.after(0, lambda: messagebox.showerror("错误", f"嗅探失败: {str(e)}"))
+        self.root.after(0, self._pause_sniffing)
+\end{codeblock}
+
+\subsubsection{PCAP文件处理}
+\begin{codeblock}[language=python]
+def save_to_pcap(self):
+    """保存为PCAP文件"""        
+    try:
+        # 打开文件对话框
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".pcap",
+            filetypes=[("PCAP Files", "*.pcap"), ("All Files", "*")]
+        )
+        
+        if file_path:
+            # 保存数据包
+            wrpcap(file_path, self.packets_to_save)
+            messagebox.showinfo("成功", f"数据包已保存到 {file_path}")
+    except Exception as e:
+        messagebox.showerror("错误", f"保存失败: {str(e)}")
+
+def load_from_pcap(self):
+    """从PCAP文件加载数据包（使用线程避免GUI卡死）"""
+    try:
+        # 打开文件对话框
+        file_path = filedialog.askopenfilename(
+            filetypes=[("PCAP Files", "*.pcap"), ("All Files", "*")]
+        )
+        
+        if file_path:
+            # 启动加载线程
+            load_thread = threading.Thread(target=_load_packets_thread, daemon=True)
+            load_thread.start()
+            
+    except Exception as e:
+        messagebox.showerror("错误", f"加载失败: {str(e)}")
+        # 重置加载标志
+        self.is_loading_from_pcap = False
+\end{codeblock}
+
+
+\subsection{数据包处理模块（process\_packet.py）}
+该模块负责解析不同协议的数据包，基于python scapy库提供的接口提取各种关键信息，处理后添加到\texttt{packet\_info}字典中，返回给\texttt{NetworkSniffer}类实例进行处理并展示。
+
+\subsubsection{IP协议处理}
+\begin{codeblock}[language=python]
+def process_ip(packet: scapy.Packet, packet_info: Dict[str, Any]):
+    """处理IP层"""
+    if IP not in packet:
+        return
+
+    ip_packet = packet[IP]
+    # 获取协议类型名称
+    IP_proto_names = {
+        1: "ICMP",
+        2: "IGMP",
+        6: "TCP",
+        17: "UDP",
+        # 其他协议...
+    }
+    IP_proto_name = IP_proto_names.get(ip_packet.proto, f"Protocol {ip_packet.proto}")
+
+    # 检查是否是分片数据包
+    is_fragment = (not ip_packet.flags.DF) and (ip_packet.flags.MF or ip_packet.frag > 0)
+    if is_fragment:
+        packet_info["is_fragment"] = "1"
+    
+    packet_info["protocol"] = "IP"
+    packet_info["info"] = f"IP {ip_packet.src} -> {ip_packet.dst} TTL={ip_packet.ttl}"
+    
+    packet_info["src"] = ip_packet.src
+    packet_info["dst"] = ip_packet.dst
+    
+    # 详细信息
+    packet_info["detail"] += f"=== IPv4 层 ===\n"
+    packet_info["detail"] += f"版本: {ip_packet.version}\n"
+    packet_info["detail"] += f"头部长度: {ip_packet.ihl * 4} 字节\n"
+    packet_info["detail"] += f"服务类型: {ip_packet.tos}\n"
+    packet_info["detail"] += f"数据包总长度: {ip_packet.len} 字节\n"
+    packet_info["detail"] += f"数据包标识: {ip_packet.id}\n"
+    # 其他详细信息提取
+
+    # 尝试提取应用层数据
+    if packet.haslayer(scapy.Raw):
+        packet_info["data"] = packet[scapy.Raw].load
+\end{codeblock}
+
+\subsubsection{其他协议处理}
+类似地，模块中还实现了对TCP、UDP、ICMP、ARP等协议的解析处理函数，这里不再一一展示。
+
+\subsubsection{分片重组处理}
+IP数据包分片的重组处理主要依赖于两个函数，\texttt{reassemble\_packet}实现重组功能，并返回给\texttt{NetworkSniffer}类的成员函数进行处理并展示。
+
+\begin{codeblock}[language=python]
+def reassemble_packet(Sniffer):
+    """重组分片数据包"""
+        
+    # 获取当前选中的IP数据包信息，收集具有相同IP ID、源IP、目的IP和协议的所有分片及其对应的packet_info加入fragments_with_info，并根据偏移量对其进行排序
+    
+    # 尝试重组数据包
+    try:
+        reassembled_data = b""
+
+        for _, fragment, _, packet_info in fragments_with_info:
+            # 优先使用packet_info中已解析的数据
+            if packet_info["data"]:
+                fragment_data = packet_info["data"]
+            else:
+                # 如果没有预解析数据，直接从IP包中提取载荷
+                ip_header_length = fragment.ihl * 4
+                fragment_data = bytes(fragment)[ip_header_length:]
+            # 将当前分片数据添加到重组数据中
+            reassembled_data += fragment_data
+            
+        # 检查分片完整性、从偏移量0开始的连续性、中间分片的连续性、是否有最后一个分片（没有MF标志）
+        
+        reassembled_detail = "=== 重组结果 ===\n"
+        reassembled_detail += f"IP ID（数据报标识）: {ip_id}\n"
+        reassembled_detail += f"源IP: {src_ip}\n"
+        reassembled_detail += f"目的IP: {dst_ip}\n"
+        reassembled_detail += f"协议: {proto}\n"
+        reassembled_detail += f"数据长度: {max_offset} 字节\n"
+        reassembled_detail += f"是否完整: {'是' if is_complete else '否'}\n"
+        reassembled_detail += f"缺失分片: {', '.join(missing_fragments) if not is_complete else '无'}\n\n"
+        # 其余详细信息
+        return reassembled_detail, reassembled_data 
+
+    except Exception as e:
+        messagebox.showerror("重组错误", f"重组过程中发生错误: {str(e)}")
+        return None, None
+\end{codeblock}
+

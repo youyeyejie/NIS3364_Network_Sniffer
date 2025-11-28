@@ -1,0 +1,140 @@
+\chapter{项目功能展示}
+
+\section{主要功能列表}
+\begin{enumerate}
+    \item \textbf{实时数据包捕获}：支持在不同网卡上实时捕获网络数据包
+    \item \textbf{多协议解析}：支持TCP、UDP、ICMP、IPv4、IPv6、ARP等常见网络协议的解析
+    \item \textbf{数据包过滤}：支持源/目标IP、源/目标端口等条件过滤数据包
+    \item \textbf{混杂模式支持}：可开启混杂模式捕获网络中所有数据包
+    \item \textbf{分片重组}：重组IP分片数据包，还原完整数据内容
+    \item \textbf{PCAP包导出与分析}：支持PCAP格式数据包的导出及导入分析
+\end{enumerate}
+
+\section{运行展示}
+
+\subsection{选择网卡接口}
+在顶部功能区中，可以从下拉列表中选择要监听的网络接口。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{graph/select-interface.png}
+    \caption{选择网络接口}
+    \label{fig:select_interface}
+\end{figure}
+
+\subsection{步骤2：设置过滤条件}
+在顶部功能区域选中协议类型进行过滤。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{graph/set-filter.png}
+    \caption{设置过滤条件}
+    \label{fig:set_filter}
+\end{figure}
+
+\subsection{配置捕获选项}
+在以管理员模式运行时，可以点击按钮开启/关闭混杂模式（非管理员模式下该按钮禁用）。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{graph/config-capture.png}
+    \caption{配置捕获选项}
+    \label{fig:config_capture}
+\end{figure}
+
+\subsection{控制捕获过程}
+点击控制按钮开始/暂停捕获。也可以随时点击清空按钮清除当前捕获的数据包。
+
+\subsection{筛选数据包}
+停止捕获后，可以根据IP地址、端口号等条件对捕获到的数据包进行筛选。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{graph/filter-packet.png}
+    \caption{筛选数据包}
+    \label{fig:filter_packets}
+\end{figure}
+
+\subsection{查看数据包详情}
+在列表中选择数据包，在下方查看详细信息：左侧部分是对数据包的各层协议分析，依赖scapy对数据包各字段的提取实现；右侧为提取到的数据部分，可以选择以十六进制/ASCII/UTF-8编码展示。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{graph/show-detail.png}
+    \caption{查看数据包详情}
+    \label{fig:show-detail}
+\end{figure}
+
+对于分片数据包，可以点击顶部功能区的重组按钮，查看完整数据内容。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{graph/reassemble-packet.png}
+    \caption{重组数据包}
+    \label{fig:reassemble-packet}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{graph/show-reassemble.png}
+    \caption{重组数据包展示}
+    \label{fig:show-reassemblel}
+\end{figure}
+
+\subsection{导出为PCAP文件及从PCAP文件导入}
+点击顶部功能区的“保存PCAP”或“加载PCAP”按钮，可以调用系统窗口将捕获的数据包保存为PCAP格式，或从PCAP格式文件中加载数据包并进行分析。
+
+
+
+\section{功能测试}
+项目提供了测试脚本\texttt{test/test.py}，用于验证嗅探器的功能：\par
+\vspace{1em}
+
+\begin{enumerate}
+    \item \textbf{分片发送长报文}：测试嗅探器的分片重组功能
+    \item \textbf{发送图像文件}：测试文件内容传输的捕获
+    \item \textbf{多协议测试}：测试TCP、UDP、ICMP、ARP等协议的解析
+\end{enumerate}\par
+\vspace{1em}
+
+在启动嗅探器后，运行测试脚本，可以使用筛选功能辅助观察：由于测试脚本使用以太网卡向IP 192.168.1.1 发送测试数据，因此设置筛选选项：dst\_ip=192.168.1.1。\par
+
+\subsection{分片重组测试}
+首先测试分片数据包重组功能：在主界面中选中“分组”列标识为“1”的数据包，点击右上角重组按钮，打开重组窗口：
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{graph/test1.png}
+    \caption{分片重组测试}
+    \label{fig:test1}
+\end{figure}
+
+可以观察到数据包成功重组，左侧显示重组结果，包含IP ID，源IP、目标IP、数据总长度、是否完整及缺失分片等字段；同时显示其上层协议的相关信息。右侧是重组数据的展示，使用UTF-8解码后，我们成功得到测试脚本中发送的\texttt{README.md}的内容。
+
+
+\subsection{文件重组测试}
+测试脚本中还发送了一个PNG文件，这里将截获到的数据包重组后，使用ASCII解码，发现数据包头包含“PNG”字段。再使用\texttt{test/HEX2PNG.py}脚本将重组后的十六进制数据转换为PNG格式，我们成功得到测试脚本中发送的\texttt{ico/Sniffer.png}的图片，这也是软件打包为二进制文件时使用的ico。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{graph/ico.png}
+    \caption{重组后的图标}
+    \label{fig:ico}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{graph/test2.png}
+    \caption{文件重组测试}
+    \label{fig:test2}
+\end{figure}
+
+
+\subsection{多协议测试}
+最后进行多协议解析测试。测试脚本中分别以ICMP、UDP、TCP、ARP发送测试请求，可以观察到网络嗅探器均能正确解析并数据显示。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{graph/test3.png}
+    \caption{多协议测试}
+    \label{fig:test3}
+\end{figure}

@@ -1,0 +1,78 @@
+\chapter{人工智能协作}
+
+在本次编程实践中，我借助了TRAE IDE 3.0.1的帮助，使用大模型Agent与对话流协助完成工作，切身体会到了Vibe Coding的魅力。
+
+\section{模型列表}
+在项目开发流程中，我使用TRAE IDE的Agent并令其自动选择模型。其内置的模型如下：\par
+\vspace{1em}
+\begin{itemize}
+    \item Doubao-Seed-Code
+    \item Kimi-K2-0905
+    \item GLM-4.6
+    \item MiniMax-M2
+    \item DeepSeek-V3.1-Terminus
+    \item Qwen-3-Coder
+\end{itemize}
+
+\section{模型交互}
+首先，我使用以下Prompt令大模型为我生成一个基本的项目框架：
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.62\linewidth]{graph/agent1.png}
+    \caption{基本任务描述}
+\end{figure}
+
+接着，我阅读并修改代码，完善详细功能，在运行时遇到报错或需要对UI界面进行修改时询问大模型。最后借助大模型的帮助为整个项目生成一份\texttt{README}文档。
+
+\begin{figure}[H]
+    \centering
+    % 第一行
+    \begin{subfigure}[b]{0.47\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{graph/agent2.png}
+        \caption{循环导入DEBUG}
+        \label{subfig:agent2}
+    \end{subfigure}
+    \hfill % 两列之间的间距
+    \begin{subfigure}[b]{0.47\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{graph/agent4.png}
+        \caption{生成调试脚本}
+        \label{subfig:agent4}
+    \end{subfigure}
+    
+    % 第二行
+    \vspace{1em} % 行间距
+    \begin{subfigure}[b]{0.47\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{graph/agent5.png}
+        \caption{重组功能DEBUG}
+        \label{subfig:agent5}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{graph/agent6.png}
+        \caption{顶部UI修改}
+        \label{subfig:agent6}
+    \end{subfigure}
+    
+    % 第三行
+    \vspace{1em}
+    \begin{subfigure}[b]{0.47\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{graph/agent7.png}
+        \caption{重组UI修改}
+        \label{subfig:agent7}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{graph/agent10.png}
+        \caption{生成README}
+        \label{subfig:agent10}
+    \end{subfigure}
+    
+    \caption{各功能模块调试与修改结果} % 总标题
+    \label{fig:all_agents}
+\end{figure}
