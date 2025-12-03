@@ -1,6 +1,7 @@
 
 from scapy.all import IP, UDP, TCP, ICMP, ARP, Raw, fragment, send, conf
 import psutil
+import os
 
 def set_interface():
     # 获取所有网卡名称
@@ -66,6 +67,27 @@ def test_image_transfer(dest_ip='192.168.1.1', sport=11451, dport=14514):
     print("图片数据发送完成，请检查嗅探器是否正确捕获并重组ICO文件数据")
     print("==================================\n")
 
+def test_ping_ipv4_ipv6(url='oc.sjtu.edu.cn'):
+    """
+    测试Ping功能
+    """
+    print("\n===== 开始测试Ping功能 =====")
+    print(f"目标URL: {url}，测试IPv4")
+    response = os.system(f"ping -c 4 {url}" if os.name != 'nt' else f"ping -4 {url}")
+    if response == 0:
+        print(f"Ping {url} 成功")
+    else:
+        print(f"Ping {url} 失败")
+    print(f"目标URL: {url}，测试IPv6")
+    response = os.system(f"ping6 -c 4 {url}" if os.name != 'nt' else f"ping -6 {url}")
+    if response == 0:
+        print(f"Ping {url} 成功")
+    else:
+        print(f"Ping {url} 失败")
+    print("Ping测试完成，请检查嗅探器是否正确捕获ICMP数据包")
+    print("==================================\n")
+    
+
 def test_various_protocols(dest_ip='192.168.1.1', sport=11451, dport=14514):
     """
     测试多种协议
@@ -100,4 +122,5 @@ if __name__ == "__main__":
     set_interface()
     test_large_packet_fragmentation()
     test_image_transfer()
+    test_ping_ipv4_ipv6()
     test_various_protocols()

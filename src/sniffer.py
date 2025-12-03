@@ -167,7 +167,7 @@ class NetworkSniffer:
                 interfaces.append(iface)
             self.interface_combo['values'] = interfaces
             if interfaces:
-                self.interface_combo.current(1)  # 默认选择第二个接口（以太网）
+                self.interface_combo.current(0)  # 默认选择第一个接口（以太网）
 
         except Exception as e:
             messagebox.showerror("错误", f"加载网络接口失败: {str(e)}")
@@ -294,11 +294,14 @@ class NetworkSniffer:
             # 从PCAP文件加载时，使用数据包自带的时间戳
             packet_time_float = float(packet.time)
             packet_timestamp = datetime.fromtimestamp(packet_time_float)
-            packet_info["time"] = packet_timestamp.strftime("%Y-%m-%d %H:%M:%S.%f")[:-1]  # 保留5位小数
+            timestamp = packet_timestamp.strftime("%Y-%m-%d %H:%M:%S.%f")[:-1]  # 保留5位小数
         else:
             # 实时捕获时，使用当前时间
-            packet_info["time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-1]
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-1]
         
+        packet_info["time"] = timestamp
+
+        print(f'[*] {timestamp} - {packet.summary()}')  # 控制台输出简要信息
         
         # 解析以太网层
         if Ether in packet:
@@ -309,25 +312,21 @@ class NetworkSniffer:
         # 解析IP层
         if IP in packet:
             process_ip(packet, packet_info)
+            # 解析ICMP层
+            if ICMP in packet:
+                process_icmp(packet, packet_info)
         # 解析IPv6层
         if IPv6 in packet:
             process_ipv6(packet, packet_info)
-        # 解析ICMP层
-        if ICMP in packet:
-            process_icmp(packet, packet_info)
-        # 解析ICMPv6层
-        if ICMPv6 in packet:
-            process_icmpv6(packet, packet_info)
+            # 解析ICMPv6层
+            if packet[IPv6].nh == 58:
+                process_icmpv6(packet, packet_info)
         # 解析TCP层
         if TCP in packet:
             process_tcp(packet, packet_info)
         # 解析UDP层
         if UDP in packet:
-            process_udp(packet, packet_info)
-        # 解析UDP层
-        if UDP in packet:
-            process_udp(packet, packet_info)
-            
+            process_udp(packet, packet_info)         
         
         # 添加到原始数据包列表
         self.original_packet_list.append(packet_info.copy())

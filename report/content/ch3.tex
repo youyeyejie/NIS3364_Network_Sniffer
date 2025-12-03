@@ -129,6 +129,25 @@
 \end{figure}
 
 
+\subsection{Ping测试}
+在Windows下执行 \verb|ping oc.sjtu.edu.cn -4|，会使用IPv4协议测试canvas网站的连通性，重复发送四次ICMP回显请求。嗅探器捕获到的数据包如图：
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{graph/ping_v4.png}
+    \caption{Ping IPv4测试}
+    \label{fig:ping_v4}
+\end{figure}
+
+同理，使用 \verb|ping oc.sjtu.edu.cn -6| 进行IPv6的Ping测试，结果如下：
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{graph/ping_v6.png}
+    \caption{Ping IPv6测试}
+    \label{fig:ping_v6}
+\end{figure}
+
+
 \subsection{多协议测试}
 最后进行多协议解析测试。测试脚本中分别以ICMP、UDP、TCP、ARP发送测试请求，可以观察到网络嗅探器均能正确解析并数据显示。
 

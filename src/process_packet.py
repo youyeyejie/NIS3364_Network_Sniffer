@@ -3,7 +3,7 @@ from typing import Dict, Any
 import scapy.all as scapy
 from scapy.layers.l2 import Ether, ARP
 from scapy.layers.inet import IP, TCP, UDP, ICMP
-from scapy.layers.inet6 import IPv6, _ICMPv6 as ICMPv6
+from scapy.layers.inet6 import IPv6, _ICMPv6 as ICMPv6, ICMPv6EchoRequest, ICMPv6EchoReply, ICMPv6DestUnreach, ICMPv6TimeExceeded, ICMPv6PacketTooBig, ICMPv6ParamProblem
 
 # from sniffer import NetworkSniffer
   
@@ -262,8 +262,6 @@ def process_icmp(packet: scapy.Packet, packet_info: Dict[str, Any]):
         return
     icmp_packet = packet[ICMP]
     packet_info["protocol"] = "ICMP"
-    packet_info["src_port"] = "ICMP"
-    packet_info["dst_port"] = "ICMP"
     
     # ICMP类型名称映射
     icmp_types = {
@@ -343,13 +341,22 @@ def process_icmp(packet: scapy.Packet, packet_info: Dict[str, Any]):
 
 def process_icmpv6(packet: scapy.Packet, packet_info: Dict[str, Any]):
     """处理ICMPv6层"""
-    if ICMPv6 not in packet:
+    if ICMPv6EchoReply in packet :
+        icmpv6_packet = packet[ICMPv6EchoReply]
+    elif ICMPv6EchoRequest in packet:
+        icmpv6_packet = packet[ICMPv6EchoRequest]
+    elif ICMPv6DestUnreach in packet:
+        icmpv6_packet = packet[ICMPv6DestUnreach]
+    elif ICMPv6TimeExceeded in packet:
+        icmpv6_packet = packet[ICMPv6TimeExceeded]
+    elif ICMPv6PacketTooBig in packet:
+        icmpv6_packet = packet[ICMPv6PacketTooBig]
+    elif ICMPv6ParamProblem in packet:  
+        icmpv6_packet = packet[ICMPv6ParamProblem]
+    else:
         return
 
-    icmpv6_packet = packet[ICMPv6]
     packet_info["protocol"] = "ICMPv6"
-    packet_info["src_port"] = "ICMPv6"
-    packet_info["dst_port"] = "ICMPv6"
     
     # 获取ICMPv6类型和代码
     icmp_type = icmpv6_packet.type
@@ -377,7 +384,7 @@ def process_icmpv6(packet: scapy.Packet, packet_info: Dict[str, Any]):
     packet_info["detail"] += f"=== ICMPv6 层 ===\n"
     packet_info["detail"] += f"类型: {icmp_type} ({icmpv6_type_name})\n"
     packet_info["detail"] += f"类型代码: {icmp_code}\n"
-    packet_info["detail"] += f"校验和: 0x{icmpv6_packet.chksum:04x}\n"
+    packet_info["detail"] += f"校验和: 0x{icmpv6_packet.cksum:04x}\n"
     
     if hasattr(icmpv6_packet, 'id'):
         packet_info["detail"] += f"标识符: {icmpv6_packet.id}\n"
@@ -390,6 +397,8 @@ def process_icmpv6(packet: scapy.Packet, packet_info: Dict[str, Any]):
     # 尝试提取应用层数据
     if packet.haslayer(scapy.Raw):
         packet_info["data"] = packet[scapy.Raw].load
+    elif hasattr(icmpv6_packet, 'data'):
+        packet_info["data"] = icmpv6_packet.data
 
 def process_tcp(packet: scapy.Packet, packet_info: Dict[str, Any]):
     """处理TCP层"""

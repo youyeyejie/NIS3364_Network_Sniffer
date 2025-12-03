@@ -52,6 +52,8 @@ if __name__ == "__main__":
 该模块实现了网络嗅探器的核心功能，包括基于Tkinter的界面创建、基于psutil的网络接口读取、基于scapy的数据包捕获、PCAP文件处理以及状态控制等。
 
 \subsubsection{初始化与界面创建}
+这一部分完成嗅探器初始化与Tkinter界面创建工作，同时基于psutil加载网络接口。
+
 \begin{codeblock}[language=python]
 class NetworkSniffer:
     """网络嗅探器主类"""
@@ -91,12 +93,15 @@ class NetworkSniffer:
 \end{codeblock}
 
 \subsubsection{数据包捕获功能}
+这一部分负责数据包的捕获工作，通过调用Scapy库的接口实现。
+
 \begin{codeblock}[language=python]
 def _start_sniffing(self):
     """开始嗅探数据包"""
     # 省略相关处理过程
     self.sniff_thread = threading.Thread(target=self._sniff_packets, args=(interface, protocol_filter), daemon=True)
     self.sniff_thread.start()
+
 def _sniff_packets(self, interface: str, protocol_filter: str):
     """数据包嗅探函数"""
     def packet_callback(packet):
@@ -123,6 +128,8 @@ def _sniff_packets(self, interface: str, protocol_filter: str):
 \end{codeblock}
 
 \subsubsection{PCAP文件处理}
+对于PCAP文件的处理，可以调用Scapy库提供的接口wrpcap、rdpcap快速实现。
+
 \begin{codeblock}[language=python]
 def save_to_pcap(self):
     """保存为PCAP文件"""        
@@ -159,11 +166,18 @@ def load_from_pcap(self):
         self.is_loading_from_pcap = False
 \end{codeblock}
 
+\subsubsection{其他操作}
+在嗅探器核心模块中，我还实现了界面更新、清空、数据包筛选、数据包处理调用等操作，由于不是重点，因此不多赘述。
+
 
 \subsection{数据包处理模块（process\_packet.py）}
 该模块负责解析不同协议的数据包，基于python scapy库提供的接口提取各种关键信息，处理后添加到\texttt{packet\_info}字典中，返回给\texttt{NetworkSniffer}类实例进行处理并展示。
 
 \subsubsection{IP协议处理}
+以网络层的IP协议为例，下面是具体的处理逻辑：
+
+对于Scapy库捕获的原始网络数据包对象，先校验是否含 IP 层，无则直接返回。接着提取 IP 对象后，通过协议编号映射表获取上层协议名。然后，根据IP数据包首部格式判断是否为分片包：若DF位为0（表示支持分片），且MF位为1（表示后续存在分片）或偏移不为0，则是分片数据包。接着存入协议类型、源 / 目的 IP、TTL 等核心信息，拼接摘要字符串。同时填充 IPv4 版本、头部长度（ihl*4）、服务类型、总长度、标识等详细字段，最后若有 Raw 层则提取应用层原始数据，为网络流量分析提供结构化 IP 层信息。
+
 \begin{codeblock}[language=python]
 def process_ip(packet: scapy.Packet, packet_info: Dict[str, Any]):
     """处理IP层"""
@@ -210,7 +224,7 @@ def process_ip(packet: scapy.Packet, packet_info: Dict[str, Any]):
 类似地，模块中还实现了对TCP、UDP、ICMP、ARP等协议的解析处理函数，这里不再一一展示。
 
 \subsubsection{分片重组处理}
-IP数据包分片的重组处理主要依赖于两个函数，\texttt{reassemble\_packet}实现重组功能，并返回给\texttt{NetworkSniffer}类的成员函数进行处理并展示。
+IP数据包分片的重组处理主要依赖于两个函数，\texttt{reassemble\_packet}实现重组功能，并返回给\texttt{NetworkSniffer}类的成员函数进行处理并展示。判断分片数据包的方式与IP协议处理部分类似，这里不过多赘述。
 
 \begin{codeblock}[language=python]
 def reassemble_packet(Sniffer):

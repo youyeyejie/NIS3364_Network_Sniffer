@@ -13,7 +13,6 @@ sniffer/
 │   ├── sniffer.py          # 核心嗅探功能实现
 │   └── process_packet.py   # 数据包处理模块
 ├── test/                   # 测试脚本目录
-│   ├── test.pcap           # 测试记录
 │   ├── test.py             # 功能测试脚本
 │   └── hex2png.py          # 十六进制数据转换为PNG图片脚本
 ├── ico/                    # 图标资源目录
